@@ -145,7 +145,7 @@ public class ExprSolver  {
                 break;
             case ("!"):
                 result = new Double(factorial(operand1.longValue()));
-                resultData.addLog("!" + correctForm(operand1) + " = " + correctForm(result));
+                resultData.addLog( correctForm(operand1) + "!" + " = " + correctForm(result));
                 break;
             case ("^"):
                 result = Math.pow(operand2, operand1);
