@@ -1,3 +1,5 @@
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.*;
 
 import java.lang.Math;
@@ -23,10 +25,9 @@ public class ExprSolver  {
         OPERATIONS.add("(");
         OPERATIONS.add(")");
     }
-    public ArrayList<String> postfixForm (String expression) { // реализация алгоритма сортировочной станции
+    public ArrayList<String> postfixForm (String expression) {
         Stack<String> stack = new Stack<String>();
         ArrayList<String> out = new ArrayList<String>();
-        // подготовительная часть - убираем пробелы, превращаем унарный минус в бинарный
         expression = expression.replace(" ", "").replace(",", ".").replace("(-", "(0-");
         if (expression.charAt(0) == '-')
             expression = "0" + expression;
@@ -61,7 +62,7 @@ public class ExprSolver  {
             out.add(expression.substring(currentPosition));
         while(!stack.empty()) {
             if(isLeftBracket(stack.peek()))
-                throw new IllegalStateException("There ");
+                throw new IllegalStateException("There is a problem....");
             out.add(stack.pop());
         }
         return out;
@@ -69,11 +70,11 @@ public class ExprSolver  {
 
     public ResultData calculate(String expression) {
         ArrayList<String> rpn = postfixForm(expression);
-        Stack<Double> stack = new Stack<Double>();
+        Stack<BigDecimal> stack = new Stack<BigDecimal>();
         for(String token: rpn) {
             if(!OPERATIONS.contains(token)) {
                 try {
-                    stack.push(Double.parseDouble(token));
+                    stack.push(new BigDecimal(token));
                 } catch(NumberFormatException nfe) {
                     throw new IllegalStateException("Invalid format of the operand! Check an expression!");
                 }
@@ -85,8 +86,6 @@ public class ExprSolver  {
             throw new IllegalStateException("Expression is not correct! Check it and try again.");
         resultData.setResult(correctForm(stack.peek()));
         return resultData;
-      //  notifyObservers(resultData);
-      //  return stack.pop();
     }
 
     private String getNextOperation(String expression, int idx) {
@@ -116,8 +115,9 @@ public class ExprSolver  {
         return operation.equals("!") ;
     }
 
-    private Double operationResult (String operation, Stack<Double> stack) {
-        Double operand2 = 0.0, operand1 = 0.0;
+    private BigDecimal operationResult (String operation, Stack<BigDecimal> stack) {
+        BigDecimal operand2 = new BigDecimal("0");
+        BigDecimal operand1 = new BigDecimal("0");
         try {
             operand1 = stack.pop();
             if (!isUnary(operation))
@@ -125,30 +125,38 @@ public class ExprSolver  {
         } catch(EmptyStackException exception) {
             throw new IllegalStateException("The operand is missing! Check the expression and try again!");
         }
-        Double result = 0.0;
+        BigDecimal result = new BigDecimal("0");
         switch (operation) {
             case ("+"):
-                result = operand1 + operand2;
+                result = operand1.add(operand2);
                 resultData.addLog(correctForm(operand2) + " + " + correctForm(operand1) + " = " + correctForm(result));
                 break;
             case ("-"):
-                result = operand2 - operand1;
+                result = operand2.subtract(operand1);
                 resultData.addLog(correctForm(operand2) + " - " + correctForm(operand1) + " = " + correctForm(result));
                 break;
             case ("*"):
-                result = operand2 * operand1;
+                result = operand1.multiply(operand2);
                 resultData.addLog(correctForm(operand1) + " * " + correctForm(operand2) + " = " + correctForm(result));
                 break;
             case ("/"):
-                result = operand2 / operand1;
+                if(operand1.equals(BigDecimal.ZERO))
+                    throw new IllegalStateException("Division by zero is not allowed! Check your expression and try again.");
+                result = operand2.divide(operand1);
                 resultData.addLog(correctForm(operand2) + " / " + correctForm(operand1) + " = " + correctForm(result));
                 break;
             case ("!"):
-                result = new Double(factorial(operand1.longValue()));
+                if(operand1.compareTo(BigDecimal.ZERO) < 0)
+                    throw new IllegalStateException("Factorial of negative numbers is not possible! Check your expression and try again.");
+                if(!isInteger(operand1))
+                    throw new IllegalStateException("Factorial is possible on whole numbers only! Check your expression and try again.");
+                result = new BigDecimal(factorial(operand1.intValue()));
                 resultData.addLog( correctForm(operand1) + "!" + " = " + correctForm(result));
                 break;
             case ("^"):
-                result = Math.pow(operand2, operand1);
+                if(!isInteger(operand1))
+                    throw new IllegalStateException("Degree cannot be fractional! Check your expression and try again.");
+                result = operand2.pow(operand1.intValue());
                 resultData.addLog(correctForm(operand2) + " ^ " + correctForm(operand1) + " = " + correctForm(result));
                 break;
         }
@@ -156,11 +164,19 @@ public class ExprSolver  {
             throw new IllegalStateException();
         return result;
     }
-    private long factorial(long num) {
-        if(num == 0)
-            return (long)1;
-        else
-            return num * factorial(num-1);
+    private  BigInteger factorial(int num) {
+        BigInteger fact = BigInteger.valueOf(1);
+        for (int i = 1; i <= num; i++) {
+            fact = fact.multiply(BigInteger.valueOf(i));
+            if(Thread.currentThread().isInterrupted())
+                throw new IllegalStateException("Interrupt");
+
+        }
+        return fact;
+    }
+
+    private boolean isInteger(BigDecimal num) {
+        return num.remainder(BigDecimal.ONE).compareTo(BigDecimal.ZERO) == 0;
     }
 
     public void clear() {
@@ -168,12 +184,11 @@ public class ExprSolver  {
         nextPosition = 0;
         currentPosition = 0;
     }
-    public String correctForm (double value) {
-        long iPart = (long) value;
-        double fPart = value - iPart;
-        if (fPart == 0.0)
-            return new Long(iPart).toString();
+
+    private String correctForm(BigDecimal number) {
+        if(number.remainder(BigDecimal.ONE).compareTo(BigDecimal.ZERO) == 0)
+            return number.toBigInteger().toString();
         else
-            return new Double(value).toString();
+            return number.toString();
     }
 }
