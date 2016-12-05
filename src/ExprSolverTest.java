@@ -1,4 +1,6 @@
 import java.math.BigDecimal;
+import java.math.MathContext;
+import java.math.RoundingMode;
 import java.util.IllegalFormatException;
 
 import static org.junit.Assert.*;
@@ -8,7 +10,7 @@ public class ExprSolverTest {
     @org.junit.Test
     public void operationResultTest() throws Exception {
         String result;
-
+        MathContext mathContext = new MathContext(1, RoundingMode.HALF_DOWN);
         assertEquals("summary", "4" , new ExprSolver().calculate("2+2").getResult());
 
         assertEquals("substract", "23.729" , new ExprSolver().calculate("27-3.271").getResult());
@@ -28,6 +30,9 @@ public class ExprSolverTest {
         assertTrue("BigInteger factorial #2", !result.equals("error") && new BigDecimal(result).compareTo(BigDecimal.ZERO) > 0);
 
         assertEquals("right operation order", "14551915228366851806640635" , new ExprSolver().calculate("(2+3)^3!^2+10").getResult());
+
+        assertEquals("trigonometry 1",BigDecimal.ONE, new BigDecimal(new ExprSolver().calculate("sin(5)^2+cos(5)^2").getResult(),mathContext));
+        assertEquals("trigonometry 2",BigDecimal.ONE, new BigDecimal(new ExprSolver().calculate("tg(5)*ctg(5)").getResult(),mathContext));
 
     }
     @org.junit.Test(expected = IllegalStateException.class)
@@ -61,5 +66,9 @@ public class ExprSolverTest {
     @org.junit.Test(expected = IllegalStateException.class)
     public void FractionalDegreeTest() throws Exception {
         new ExprSolver().calculate("3^1.24");
+    }
+    @org.junit.Test(expected = IllegalStateException.class)
+    public void CtgZeroTest() throws Exception {
+        new ExprSolver().calculate("ctg(0)");
     }
 }
