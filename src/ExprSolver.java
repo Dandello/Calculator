@@ -160,7 +160,7 @@ public class ExprSolver  {
             case ("/"):
                 if(operand1.equals(BigDecimal.ZERO))
                     throw new IllegalStateException("Division by zero is not allowed! Check your expression and try again.");
-                result = operand2.divide(operand1);
+                result = operand2.divide(operand1,new MathContext(8, RoundingMode.HALF_DOWN));
                 resultData.addLog(correctForm(operand2) + " / " + correctForm(operand1) + " = " + correctForm(result));
                 break;
             case ("!"):
